@@ -72,6 +72,39 @@ class Trainer(pl.LightningModule):
         self.val_metrics = metrics.clone(prefix="val_")
         self.curr_ep = 0
 
+        B = 32
+        N_agent = 10
+        N_lane = 80
+        h_steps = 50
+        f_steps = 60
+        lane_sampling_pts = 20
+        self.example_input_array = {
+            "x": torch.rand(B, N_agent, h_steps, 2),
+            "x_attr": torch.zeros((B, N_agent, 3), dtype=torch.uint8),
+            "x_positions": torch.rand(B, N_agent, h_steps, 2),
+            "x_centers": torch.rand(B, N_agent, 2),
+            "x_angles": torch.rand(B, N_agent, h_steps+f_steps),
+            "x_velocity": torch.rand(B, N_agent, h_steps+f_steps),
+            "x_velocity_diff": torch.rand(B, N_agent, h_steps),
+            "lane_positions": torch.rand(B, N_lane, lane_sampling_pts, 2),
+            "lane_centers": torch.rand(B, N_lane, 2),
+            "lane_angles": torch.rand(B, N_lane),
+            "lane_attr": torch.rand(B, N_lane, 3),
+            "is_intersections": torch.rand(B, N_lane),
+            "y": torch.rand(B, N_agent, f_steps, 2),
+            "x_padding_mask": torch.zeros((B, N_agent, h_steps+f_steps), dtype=torch.bool),
+            "lane_padding_mask": torch.zeros((B, N_lane, lane_sampling_pts), dtype=torch.bool),
+            "x_key_padding_mask": torch.zeros((B, N_agent), dtype=torch.bool),
+            "lane_key_padding_mask": torch.zeros((B, N_lane), dtype=torch.bool),
+            "num_actors": torch.full((B,), fill_value=N_agent, dtype=torch.int64),
+            "num_lanes": torch.full((B,), fill_value=N_lane, dtype=torch.int64),
+            "scenario_id": [] * B,
+            "track_id": [] * B,
+            "origin": torch.rand(B, 2),
+            "theta": torch.rand(B),
+        }
+
+
         return
 
 

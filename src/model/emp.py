@@ -121,7 +121,7 @@ class EMP(nn.Module):
             [
                 data["x"],
                 data["x_velocity_diff"][..., None],
-                ~hist_padding_mask[..., None],
+                (~hist_padding_mask[..., None]).float(),
             ],
             dim=-1,
         )
@@ -135,7 +135,7 @@ class EMP(nn.Module):
 
         actor_feat = hist_feat[~hist_feat_key_padding]
         
-        ts = torch.arange(self.history_steps).view(1, -1, 1).repeat(actor_feat.shape[0], 1, 1).to(actor_feat.device)
+        ts = torch.arange(self.history_steps).view(1, -1, 1).repeat(actor_feat.shape[0], 1, 1).to(actor_feat.device).float()
         actor_feat = torch.cat([actor_feat, ts], dim=-1)
 
         actor_feat = self.h_proj( actor_feat )
@@ -146,7 +146,11 @@ class EMP(nn.Module):
         actor_feat_tmp = torch.zeros(
             B * N, actor_feat.shape[-1], device=actor_feat.device
         )
-        actor_feat_tmp[~hist_feat_key_padding] = actor_feat
+
+        #actor_feat_tmp[~hist_feat_key_padding] = actor_feat
+        mask_indices = torch.nonzero(~hist_feat_key_padding, as_tuple=True)
+        actor_feat_tmp.scatter_(0, mask_indices[0].unsqueeze(1).expand(-1, self.embed_dim), actor_feat)
+
         actor_feat = actor_feat_tmp.view(B, N, actor_feat.shape[-1])
 
         ####################
@@ -156,7 +160,7 @@ class EMP(nn.Module):
 
         lane_normalized = data["lane_positions"] - data["lane_centers"].unsqueeze(-2)
         lane_normalized = torch.cat(
-            [lane_normalized, ~lane_padding_mask[..., None]], dim=-1
+            [lane_normalized, (~lane_padding_mask[..., None]).float()], dim=-1
         )
         B, M, L, D = lane_normalized.shape
         lane_feat = self.lane_embed(lane_normalized.view(-1, L, D).contiguous())
@@ -198,13 +202,11 @@ class EMP(nn.Module):
 
         y_hat, pi = self.decoder(x_agent, x_encoder, key_padding_mask, N)
         
-        y_hat_eps = y_hat[:, :, -1].squeeze(2)
+        y_hat_eps = y_hat[:, :, -1]
 
         return {
             "y_hat": y_hat,
             "pi": pi,
-            "y_hat_layers": y_hat,
-            "pi_layers": pi,
             "y_hat_others": y_hat_others,
             "y_hat_eps": y_hat_eps,
             "x_agent": x_agent

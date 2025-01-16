@@ -128,10 +128,6 @@ class Block(nn.Module):
             attn_mask=mask,
             key_padding_mask=key_padding_mask,
         )[0]
-        if torch.isnan(attn_output).sum() > 0:
-            print(torch.isnan(attn_output).nonzero(as_tuple=True))
-            print(torch.isnan(attn_output).sum(), q.shape, k.shape, v.shape, key_padding_mask.shape)
-            assert False
         src = q + self.drop_path1(attn_output) 
         src = src + self.drop_path2(self.mlp(self.norm2(src))) 
         return src
