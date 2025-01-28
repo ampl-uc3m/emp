@@ -75,7 +75,7 @@ class Av2Extractor:
 
         # initialization
         x = torch.zeros(num_nodes, 110, 2, dtype=torch.float)
-        x_attr = torch.zeros(num_nodes, 3, dtype=torch.uint8)
+        x_attr = torch.zeros(num_nodes, 3, dtype=torch.int)
         x_heading = torch.zeros(num_nodes, 110, dtype=torch.float)
         x_velocity = torch.zeros(num_nodes, 110, dtype=torch.float)
         x_track_horizon = torch.zeros(num_nodes, dtype=torch.int)

@@ -80,7 +80,7 @@ class Trainer(pl.LightningModule):
         lane_sampling_pts = 20
         self.example_input_array = {
             "x": torch.rand(B, N_agent, h_steps, 2),
-            "x_attr": torch.zeros((B, N_agent, 3), dtype=torch.uint8),
+            "x_attr": torch.zeros((B, N_agent, 3), dtype=torch.int),
             "x_positions": torch.rand(B, N_agent, h_steps, 2),
             "x_centers": torch.rand(B, N_agent, 2),
             "x_angles": torch.rand(B, N_agent, h_steps+f_steps),

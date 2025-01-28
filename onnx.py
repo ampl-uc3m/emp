@@ -20,7 +20,7 @@ def main():
     lane_sampling_pts = 20 #sampling points per lane segment
     data = {
                 "x": torch.rand(B, N_agent, h_steps, 2), #agent tracks as local differences
-                "x_attr": torch.zeros((B, N_agent, 3), dtype=torch.uint8), #categorical agent attributes
+                "x_attr": torch.zeros((B, N_agent, 3), dtype=torch.int), #categorical agent attributes
                 "x_positions": torch.rand(B, N_agent, h_steps, 2), #agent tracks in scene coordinates
                 "x_centers": torch.rand(B, N_agent, 2), #center of agent track
                 "x_angles": torch.rand(B, N_agent, h_steps+f_steps), #agent headings
