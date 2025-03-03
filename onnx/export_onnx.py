@@ -1,14 +1,12 @@
-from onnx_trainer_forecast import Trainer
+from onnx_trainer_forecast import Trainer as Model
 import torch
 import onnxruntime
 
 
 def main():
     # create ONNX model
-    # input format defined as self.example_input_array in trainer_forecast.py
     onnx_fpath = "emp.onnx"
-    model = Trainer()
-    model.to_onnx(onnx_fpath, export_params=True, opset_version=11)
+    model = Model().eval()
 
     # create dummy input to onnx export
     B = 32 #batch size
@@ -41,11 +39,13 @@ def main():
                 "track_id": [] * B,
                 "origin": torch.rand(B, 2), #scene to global coordinates position
                 "theta": torch.rand(B), #scene to global coordinates orientation
-            }  
+            } 
 
     # dummy data inference pytorch model
     print( "MODEL INF PYTORCH:", type(model(data)) )
 
+    model.to_onnx(onnx_fpath, input_sample=data, export_params=True, opset_version=11)
+    
     # create onnx runtime session
     sess_opt = onnxruntime.SessionOptions()
     ort_session = onnxruntime.InferenceSession(onnx_fpath, sess_opt)
