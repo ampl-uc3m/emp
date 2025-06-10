@@ -173,7 +173,6 @@ class Trainer(pl.LightningModule):
 
     def on_test_end(self) -> None:
         self.submission_handler.generate_submission_file()
-        self.save_velocity_file()
 
     def on_validation_start(self) -> None:
         self.val_scores = {"val_MR": [], "val_minADE1": [], "val_minADE6": [], "val_minFDE1": [], "val_minFDE6": [], "val_brier-minFDE6": []}
