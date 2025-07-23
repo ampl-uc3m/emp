@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  emp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USER_ID: ${USER_ID:-1000}
+        USER_NAME: ${USER_NAME:-user}
+        GROUP_ID: ${GROUP_ID:-1000}
+        GROUP_NAME: ${GROUP_NAME:-user}
+    container_name: emp_container_milimetrico
+    runtime: nvidia  # Add this for GPU support , pytorch lightning lo necesita
+    volumes:
+      - ./emp:/workspace/emp
+      - /raid/datasets/av2:/raid/datasets/av2:rw
+    working_dir: /workspace
+    stdin_open: true  # Para mantener el contenedor abierto     
+    tty: true  # Permitir terminal interactiva 
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all  # Fixed: removed extra space
+    shm_size: 11gb
