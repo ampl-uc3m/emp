@@ -13,7 +13,7 @@ services:
     container_name: emp_container_milimetrico
     runtime: nvidia  # Add this for GPU support , pytorch lightning lo necesita
     volumes:
-      - ./emp:/workspace/emp
+      - ../emp:/workspace/emp
       - /raid/datasets/av2:/raid/datasets/av2:rw
     working_dir: /workspace
     stdin_open: true  # Para mantener el contenedor abierto     

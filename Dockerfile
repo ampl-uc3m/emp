@@ -38,8 +38,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Set working directory (equivalent to being inside the conda environment)
 WORKDIR /app
 
-# Copy requirements from the emp directory
-COPY ./emp/requirements.txt ./requirements.txt
 
 # Step 1: Install PyTorch 2.1.1 with CUDA 12.1 support (equivalent to your pip command)
 # Install NumPy 1.23.x which still has np.bool compatibility
