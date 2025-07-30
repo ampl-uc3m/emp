@@ -10,7 +10,7 @@ services:
         USER_NAME: ${USER_NAME:-user}
         GROUP_ID: ${GROUP_ID:-1000}
         GROUP_NAME: ${GROUP_NAME:-user}
-    container_name: emp_container_milimetrico
+    container_name: emp_container_submilimetrico_preciso
     runtime: nvidia  # Add this for GPU support , pytorch lightning lo necesita
     volumes:
       - ../emp:/workspace/emp

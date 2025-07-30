@@ -73,7 +73,7 @@ def visualize_scenario(
     # Plot static map elements and actor tracks
     if show_map: _plot_static_map_elements(scenario_static_map, True)
     cur_plot_bounds = _plot_actor_tracks(ax, scenario, timestep, show_history, show_future, show_map)
-    print(cur_plot_bounds)
+    # print(cur_plot_bounds)
     plot_bounds = cur_plot_bounds
 
     if prediction is not None:

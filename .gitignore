@@ -6,6 +6,15 @@ __pycache__/
 # C extensions
 *.so
 
+# Folders created by tools
+/outputs
+/predictions
+
+# Images and other media files
+*.png
+*.jpg
+*.jpeg
+
 # Distribution / packaging
 .Python
 build/
