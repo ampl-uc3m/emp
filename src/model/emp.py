@@ -127,6 +127,8 @@ class EMP(nn.Module):
         )
 
         B, N, L, D = hist_feat.shape
+
+      
         hist_feat = hist_feat.view(B * N, L, D)
         hist_feat_key_padding = hist_key_padding_mask.view(B * N)
 
@@ -200,9 +202,13 @@ class EMP(nn.Module):
         x_others = x_encoder[:, 1:N]
         y_hat_others = self.dense_predictor(x_others).view(B, -1, self.future_steps, 2)
 
-        y_hat, pi = self.decoder(x_agent, x_encoder, key_padding_mask, N)
-        
-        y_hat_eps = y_hat[:, :, -1]
+        # y_hat, pi = self.decoder(x_agent, x_encoder, key_padding_mask, N)
+        y_hat, pi = self.decoder(x_encoder[:, :N], x_encoder, key_padding_mask, N)
+
+        y_hat_eps = y_hat[:, :, :,-1]
+
+        # print(f"y_hat shape: {y_hat.shape}, pi shape: {pi.shape}, y_hat_others shape: {y_hat_others.shape}, y_hat_eps shape: {y_hat_eps.shape}, x_agent shape: {x_agent.shape}")
+        # AA
 
         return {
             "y_hat": y_hat,

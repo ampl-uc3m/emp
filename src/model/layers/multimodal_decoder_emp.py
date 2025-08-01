@@ -36,11 +36,18 @@ class MultimodalDecoder(nn.Module):
 
     def forward(self, x, __1, __2, __3):
         B = x.shape[0]
+        # print(f"Data shape: {x.shape}, k: {self.k}, embed_dim: {self.embed_dim}")
+        
+        mode_embeds = self.mode_embed.weight.view(1, self.k, self.embed_dim).repeat(B, x.shape[1], 1, 1)
+        # print(f"Mode embeds shape: {mode_embeds.shape}")
+        x = x.unsqueeze(2).repeat(1, 1, self.k, 1) + mode_embeds
+        # x = x.repeat(1, 1, self.k, 1) #+ mode_embeds
+        # print(f"x shape after mode embedding: {x.shape}")
 
-        mode_embeds = self.mode_embed.weight.view(1, self.k, self.embed_dim).repeat(B, 1, 1)
-        x = x.unsqueeze(1).repeat(1, self.k, 1) + mode_embeds
+        loc = self.loc(x).view(-1, x.shape[1], self.k, self.future_steps, 2)
 
-        loc = self.loc(x).view(-1, self.k, self.future_steps, 2)
+        # print(f"Salidon mayi {loc.shape}")
         pi = self.pi(x).squeeze(-1)
-
+        # print(f"pi shape: {pi.shape}")
+        # AA
         return loc, pi

@@ -94,26 +94,44 @@ class Trainer(pl.LightningModule):
 
     def cal_loss(self, out, data, batch_idx=0):
         y_hat, pi, y_hat_others = out["y_hat"], out["pi"], out["y_hat_others"]
-        y, y_others = data["y"][:, 0], data["y"][:, 1:]
-
+        # y, y_others = data["y"][:, 0], data["y"][:, 1:]
+        y, y_others = data["y"], data["y"][:, 1:]
+        # print(f"y_hat shape: {y_hat.shape}, pi shape: {pi.shape}, y_hat_others shape: {y_hat_others.shape}")
+        # print(f"y shape: {y.shape}, y_others shape: {y_others.shape}")
+        # AA
         loss = 0
         B = y_hat.shape[0]
         B_range = range(B)
+        N = y_hat.shape[1]
+        N_range = range(N)
 
 
-        l2_norm = torch.norm(y_hat[..., :2] - y.unsqueeze(1), dim=-1).sum(-1)
-
+        l2_norm = torch.norm(y_hat[..., :2] - y.unsqueeze(2), dim=-1).sum(-1)
+        # print(f"l2_norm shape: {l2_norm.shape}")
         best_mode = torch.argmin(l2_norm, dim=-1)
-        y_hat_best = y_hat[B_range, best_mode]
+        # print(f"best_mode shape: {best_mode.shape}")
+        # y_hat_best = y_hat[B_range, best_mode]
+        # Create indices for batch and sequence dimensions - REVISAR TODO
+        batch_idx = torch.arange(y_hat.shape[0]).unsqueeze(1).expand(-1, y_hat.shape[1])
+        seq_idx = torch.arange(y_hat.shape[1]).unsqueeze(0).expand(y_hat.shape[0], -1)
+        y_hat_best = y_hat[batch_idx, seq_idx, best_mode]
+        # print(f"best_mode shape: {best_mode.shape}, y_hat_best shape: {y_hat_best.shape}, y_hat_best_2:{y_hat_best[..., :2].shape}")
+        # print(f"y: {y.shape}")
         agent_reg_loss = F.smooth_l1_loss(y_hat_best[..., :2], y)
 
-        agent_cls_loss = F.cross_entropy(pi, best_mode.detach())
+        # print(f"agent_reg_loss shape: {agent_reg_loss}")
+        # print(f"pi shape: {pi.shape}, best_mode shape: {best_mode.shape}")
+        # agent_cls_loss = F.cross_entropy(pi, best_mode.detach())
+        #REVISAR TODO
+        agent_cls_loss = F.cross_entropy(pi.reshape(-1, pi.shape[-1]), best_mode.detach().reshape(-1))
         loss += agent_reg_loss + agent_cls_loss
-        
+
+        # print(f"agent_cls_loss shape: {agent_cls_loss}")
+
         others_reg_mask = ~data["x_padding_mask"][:, 1:, self.history_steps:]
         others_reg_loss = F.smooth_l1_loss(y_hat_others[others_reg_mask], y_others[others_reg_mask])
         loss += others_reg_loss
-    
+        # AA
         return {
             "loss": loss,
             "reg_loss": agent_reg_loss.item(),
@@ -141,7 +159,25 @@ class Trainer(pl.LightningModule):
         out = self(data)
 
         losses = self.cal_loss(out, data, -1)
-        metrics = self.val_metrics(out, data["y"][:, 0])
+        #print(f"Output shape: {out['y_hat'].shape}, Data y shape: {data['y'].shape}")
+        
+        # metrics = self.val_metrics(out, data["y"][:, 0])
+
+        # Aplanar batch y agentes
+        pred = out["y_hat"].reshape(-1, 6, 60, 2)  # [B*A, 6, T, 2]
+        gt = data["y"].reshape(-1, 60, 2)         # [B*A, T, 2]
+        probs = out["pi"].reshape(-1, 6)          # [B*A, 6]
+
+        # Construir outputs para las métricas
+        outputs = {"y_hat": pred, "pi": probs}
+
+        # Evaluar métricas
+        metrics = self.val_metrics(outputs, gt)
+
+        # pred = out["y_hat"].reshape(-1, 6, 60, 2)    # (96×48, 6, 60, 2)
+        # gt = data["y"].reshape(-1, 60, 2)           # (96×48, 60, 2)
+
+        # metrics = self.val_metrics(pred, gt)
 
         self.log(
             "val/reg_loss",
@@ -162,6 +198,7 @@ class Trainer(pl.LightningModule):
             batch_size=1,
             sync_dist=True,
         )
+        # print(f"Metrics: {metrics}")
 
     def on_test_start(self) -> None:
         save_dir = Path("./submission")

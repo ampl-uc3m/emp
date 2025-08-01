@@ -14,7 +14,7 @@ services:
     runtime: nvidia  # Add this for GPU support , pytorch lightning lo necesita
     volumes:
       - ../emp:/workspace/emp
-      - /raid/datasets/av2:/raid/datasets/av2:rw
+      - /raid/datasets/dani_datasets/av2:/raid/datasets/av2:rw
     working_dir: /workspace
     stdin_open: true  # Para mantener el contenedor abierto     
     tty: true  # Permitir terminal interactiva 

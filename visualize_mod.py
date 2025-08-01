@@ -53,7 +53,9 @@ def main():
                 batch_pred, scores = model.predict(data, full=True)
 
         if "y" not in data.keys(): data["y"] = torch.zeros((data["x"].shape[0], data["x"].shape[1], 60, 2), device=data["x"].device)
-
+        print(f"data['x'] shape: {data['x'].shape}")
+        print(f"predictions shape: {batch_pred[0].shape if predict else 'N/A'}")
+        
         for b in range(0, data["x"].shape[0], 1):
             scene_id = data["scenario_id"][b]
             scene_file = data_root / ".." / split / scene_id / ("scenario_" + scene_id + ".parquet")
