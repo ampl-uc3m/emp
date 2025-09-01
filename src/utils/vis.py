@@ -73,71 +73,156 @@ def visualize_scenario(
     # Plot static map elements and actor tracks
     if show_map: _plot_static_map_elements(scenario_static_map, True)
     cur_plot_bounds = _plot_actor_tracks(ax, scenario, timestep, show_history, show_future, show_map)
-    # print(cur_plot_bounds)
     plot_bounds = cur_plot_bounds
 
     if prediction is not None:
-        if best_pred < 0:
-            _scatter_polylines(
-                prediction[:, :, :],
-                ax,
-                color="#ffc187",
-                grad_color=False,
-                alpha=0.8,
-                linewidth=3,
-                zorder=1000,
-                arrow=False
-            )
-            plt.scatter(
-                prediction[:, -1, 0],
-                prediction[:, -1, 1],
-                color="#ff993b",
-                alpha=1,
-                zorder=2000,
-                marker="*",
-                s=200
-            )
-        else:
-            _scatter_polylines(
-                prediction[:, :, :],
-                ax,
-                color="#ffc187",
-                grad_color=False,
-                alpha=0.1,
-                linewidth=3,
-                zorder=1000,
-                arrow=False
-            )
-            plt.scatter(
-                prediction[:, -1, 0],
-                prediction[:, -1, 1],
-                color="#ff993b",
-                alpha=0.3,
-                zorder=2000,
-                marker="*",
-                s=200
-            )
-            best_prediction = prediction[best_pred, :, :][np.newaxis, :, :]
-            _scatter_polylines(
-                best_prediction,
-                ax,
-                color="#ffc187",
-                grad_color=False,
-                alpha=1.0,
-                linewidth=4,
-                zorder=1000,
-                arrow=False
-            )
-            plt.scatter(
-                best_prediction[:, -1, 0],
-                best_prediction[:, -1, 1],
-                color="#ff993b",
-                alpha=1.0,
-                zorder=2000,
-                marker="*",
-                s=200
-            )
+        # Debug: verificar shape de las predicciones
+        print(f"Prediction shape: {prediction.shape}")
+        
+        # Si prediction tiene shape (A, M, T, 2) - múltiples agentes
+        if len(prediction.shape) == 4:
+            num_agents = prediction.shape[0]
+            num_modes = prediction.shape[1]
+            
+            # Colores diferentes para cada agente
+            agent_colors = [
+                "#ffc187", "#87ceeb", "#98fb98", "#dda0dd", "#f0e68c", 
+                "#ffa07a", "#20b2aa", "#87cefa", "#deb887", "#5f9ea0"
+            ]
+            print(f"Title: {title}")
+            print(prediction.shape)
+            print(prediction[:3, 0, :3, :]) 
+            AA
+            for agent_idx in range(num_agents):
+                agent_pred = prediction[agent_idx]  # (M, T, 2)
+                color = agent_colors[agent_idx % len(agent_colors)]
 
+                # print(agent_pred.shape)
+                # print(agent_pred[0, :3, :])  # Debug: verificar shape de las predicciones del agente
+                # AA
+                # Debug: verificar shape de las predicciones del agente
+                
+                if best_pred < 0:
+                    # Mostrar todos los modos para este agente
+                    _scatter_polylines(
+                        agent_pred,  # (M, T, 2)
+                        ax,
+                        color=color,
+                        grad_color=False,
+                        alpha=0.6,
+                        linewidth=2,
+                        zorder=1000 + agent_idx,
+                        arrow=False
+                    )
+                    # Puntos finales
+                    plt.scatter(
+                        agent_pred[:, -1, 0],
+                        agent_pred[:, -1, 1],
+                        color=color,
+                        alpha=0.8,
+                        zorder=2000 + agent_idx,
+                        marker="*",
+                        s=150
+                    )
+                    
+                else:
+                    # Mostrar todos los modos con baja opacidad
+                    _scatter_polylines(
+                        agent_pred,
+                        ax,
+                        color=color,
+                        grad_color=False,
+                        alpha=0.1,
+                        linewidth=2,
+                        zorder=1000 + agent_idx,
+                        arrow=False
+                    )
+                    # Mostrar solo el mejor modo con alta opacidad
+                    if best_pred < num_modes:
+                        best_prediction = agent_pred[best_pred:best_pred+1]  # (1, T, 2)
+                        _scatter_polylines(
+                            best_prediction,
+                            ax,
+                            color=color,
+                            grad_color=False,
+                            alpha=1.0,
+                            linewidth=3,
+                            zorder=1000 + agent_idx,
+                            arrow=False
+                        )
+                        plt.scatter(
+                            best_prediction[0, -1, 0],
+                            best_prediction[0, -1, 1],
+                            color=color,
+                            alpha=1.0,
+                            zorder=2000 + agent_idx,
+                            marker="*",
+                            s=200
+                        )
+        
+        # Si prediction tiene shape (M, T, 2) - un solo agente (compatibilidad con versión anterior)
+        elif len(prediction.shape) == 3:
+            if best_pred < 0:
+                _scatter_polylines(
+                    prediction[:, :, :],
+                    ax,
+                    color="#ffc187",
+                    grad_color=False,
+                    alpha=0.8,
+                    linewidth=3,
+                    zorder=1000,
+                    arrow=False
+                )
+                plt.scatter(
+                    prediction[:, -1, 0],
+                    prediction[:, -1, 1],
+                    color="#ff993b",
+                    alpha=1,
+                    zorder=2000,
+                    marker="*",
+                    s=200
+                )
+            else:
+                _scatter_polylines(
+                    prediction[:, :, :],
+                    ax,
+                    color="#ffc187",
+                    grad_color=False,
+                    alpha=0.1,
+                    linewidth=3,
+                    zorder=1000,
+                    arrow=False
+                )
+                plt.scatter(
+                    prediction[:, -1, 0],
+                    prediction[:, -1, 1],
+                    color="#ff993b",
+                    alpha=0.3,
+                    zorder=2000,
+                    marker="*",
+                    s=200
+                )
+                if best_pred < prediction.shape[0]:
+                    best_prediction = prediction[best_pred:best_pred+1, :, :]
+                    _scatter_polylines(
+                        best_prediction,
+                        ax,
+                        color="#ffc187",
+                        grad_color=False,
+                        alpha=1.0,
+                        linewidth=4,
+                        zorder=1000,
+                        arrow=False
+                    )
+                    plt.scatter(
+                        best_prediction[0, -1, 0],
+                        best_prediction[0, -1, 1],
+                        color="#ff993b",
+                        alpha=1.0,
+                        zorder=2000,
+                        marker="*",
+                        s=200
+                    )
 
     plt.axis("equal")
     plt.xlim(

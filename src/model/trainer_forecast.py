@@ -85,12 +85,12 @@ class Trainer(pl.LightningModule):
     def predict(self, data, full=False):
         with torch.no_grad():
             out = self.net(data)
+
         predictions, prob = self.submission_handler.format_data(
             data, out["y_hat"], out["pi"], inference=True
         )
         predictions = [predictions, out] if full else predictions
         return predictions, prob    
-
 
     def cal_loss(self, out, data, batch_idx=0):
         y_hat, pi, y_hat_others = out["y_hat"], out["pi"], out["y_hat_others"]

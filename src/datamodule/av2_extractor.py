@@ -14,7 +14,6 @@ from .av2_data_utils import (
     load_av2_df,
 )
 
-
 class Av2Extractor:
     def __init__(
         self,
@@ -135,6 +134,7 @@ class Av2Extractor:
             x_attr = x_attr[valid_actor_mask]
             padding_mask = padding_mask[valid_actor_mask]
             num_nodes = x.shape[0]
+            
 
         x_ctrs = x[:, 49, :2].clone()
         x_positions = x[:, :50, :2].clone()
@@ -145,6 +145,9 @@ class Av2Extractor:
             torch.zeros(num_nodes, 60, 2),
             x[:, 50:] - x[:, 49].unsqueeze(-2),
         )
+
+        agents_ref = x[:, 49].clone()
+
         x[:, 1:50] = torch.where(
             (padding_mask[:, :49] | padding_mask[:, 1:50]).unsqueeze(-1),
             torch.zeros(num_nodes, 49, 2),
@@ -182,6 +185,7 @@ class Av2Extractor:
             "scenario_id": scenario_id,
             "track_id": agent_id,
             "city": city,
+            "agents_ref": agents_ref,
         }
 
     @staticmethod

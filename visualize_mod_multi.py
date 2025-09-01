@@ -28,7 +28,8 @@ def main():
     dataset = Av2Dataset(data_root=data_root, cached_split=split)
 
     if predict:
-        chkpt_fpath = "checkpoints/empd.ckpt"
+        # chkpt_fpath = "checkpoints/empd.ckpt"
+        chkpt_fpath = "outputs/emp-forecast_av2/2025-07-31/11-23-12/checkpoints/last.ckpt"
         assert os.path.exists(chkpt_fpath), "chkpt files does not exist, update path to checkpoint"
         model = Model.load_from_checkpoint(chkpt_fpath, pretrained_weights=chkpt_fpath)
         model = model.eval().cuda()
@@ -65,6 +66,7 @@ def main():
             if predict:
                 prediction = batch_pred[0][b].squeeze()
                 visualize_scenario(scenario, static_map, title="{}".format(scene_id), prediction=prediction, tight=True, timestep=49 if split == "test" else 50, save_path=Path("predictions/{}.png".format(scene_id)))
+                AA
             else:
                 visualize_scenario(scenario, static_map, title="{}".format(scene_id), tight=True, timestep=49 if split == "test" else 50)
             plt.show()
