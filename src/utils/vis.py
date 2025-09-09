@@ -47,7 +47,6 @@ _STATIC_OBJECT_TYPES: Set[ObjectType] = {
     ObjectType.RIDERLESS_BICYCLE,
 }
 
-
 def visualize_scenario(
     scenario: ArgoverseScenario,
     scenario_static_map: ArgoverseStaticMap,
@@ -76,32 +75,90 @@ def visualize_scenario(
     plot_bounds = cur_plot_bounds
 
     if prediction is not None:
-        # Debug: verificar shape de las predicciones
         print(f"Prediction shape: {prediction.shape}")
+        
+        # Debug: let's see what attributes the scenario actually has
+        print(f"Scenario attributes: {[attr for attr in dir(scenario) if not attr.startswith('_')]}")
         
         # Si prediction tiene shape (A, M, T, 2) - múltiples agentes
         if len(prediction.shape) == 4:
             num_agents = prediction.shape[0]
             num_modes = prediction.shape[1]
             
+            # Try different ways to access tracks in AV2
+            tracks = None
+            if hasattr(scenario, 'tracks'):
+                if isinstance(scenario.tracks, dict):
+                    tracks = list(scenario.tracks.values())
+                elif isinstance(scenario.tracks, list):
+                    tracks = scenario.tracks
+            elif hasattr(scenario, 'tracked_objects'):
+                tracks = scenario.tracked_objects
+            else:
+                print("Error: Cannot find tracks in scenario object")
+                print(f"Available attributes: {[attr for attr in dir(scenario) if not attr.startswith('_')]}")
+                return
+            
             # Colores diferentes para cada agente
             agent_colors = [
                 "#ffc187", "#87ceeb", "#98fb98", "#dda0dd", "#f0e68c", 
                 "#ffa07a", "#20b2aa", "#87cefa", "#deb887", "#5f9ea0"
             ]
-            print(f"Title: {title}")
-            print(prediction.shape)
-            print(prediction[:3, 0, :3, :]) 
-            AA
-            for agent_idx in range(num_agents):
-                agent_pred = prediction[agent_idx]  # (M, T, 2)
+            
+            # Debug coordinates
+            print("=== DEBUGGING COORDINATES ===")
+            print(f"Found {len(tracks)} tracks")
+            
+            for agent_idx in range(min(num_agents, len(tracks))):
+                agent_pred = prediction[agent_idx].copy()  # (M, T, 2)
                 color = agent_colors[agent_idx % len(agent_colors)]
-
-                # print(agent_pred.shape)
-                # print(agent_pred[0, :3, :])  # Debug: verificar shape de las predicciones del agente
-                # AA
-                # Debug: verificar shape de las predicciones del agente
                 
+                # Get agent's current position
+                track = tracks[agent_idx]
+                
+                # Try different ways to access object states
+                object_states = None
+                if hasattr(track, 'object_states'):
+                    object_states = track.object_states
+                elif hasattr(track, 'states'):
+                    object_states = track.states
+                else:
+                    print(f"Warning: Cannot find object states for track {agent_idx}")
+                    continue
+                
+                # Check if timestep exists
+                if timestep >= len(object_states):
+                    print(f"Warning: Timestep {timestep} not available for agent {agent_idx}")
+                    continue
+                
+                # Get position
+                state = object_states[timestep]
+                if hasattr(state, 'position'):
+                    current_pos = np.array([state.position[0], state.position[1]])
+                elif hasattr(state, 'pose'):
+                    current_pos = np.array([state.pose.position[0], state.pose.position[1]])
+                else:
+                    print(f"Warning: Cannot find position for agent {agent_idx}")
+                    continue
+                
+                # Check if prediction needs alignment
+                pred_start = agent_pred[0, 0, :]  # First mode, first timestep
+                distance_from_current = np.linalg.norm(pred_start - current_pos)
+                
+                if agent_idx < 3:  # Debug first 3 agents
+                    track_id = getattr(track, 'track_id', f'unknown_{agent_idx}')
+                    print(f"Agent {agent_idx} (track_id: {track_id}):")
+                    print(f"  Current position: {current_pos}")
+                    print(f"  Prediction starts at: {pred_start}")
+                    print(f"  Distance: {distance_from_current:.2f}")
+                
+                # If prediction starts too far from current position, align it
+                if distance_from_current > 10:  # Threshold in meters
+                    print(f"  -> Aligning agent {agent_idx} predictions")
+                    # Assume predictions are relative to origin, translate to current position
+                    agent_pred = agent_pred + current_pos.reshape(1, 1, 2)
+                
+                # Now plot the aligned predictions
                 if best_pred < 0:
                     # Mostrar todos los modos para este agente
                     _scatter_polylines(
@@ -159,12 +216,75 @@ def visualize_scenario(
                             marker="*",
                             s=200
                         )
+            
+            print("=" * 30)
         
         # Si prediction tiene shape (M, T, 2) - un solo agente (compatibilidad con versión anterior)
         elif len(prediction.shape) == 3:
+            # Get the focal agent's current position for alignment
+            focal_track = None
+            
+            # Try to find focal track
+            if hasattr(scenario, 'focal_track_id'):
+                focal_track_id = scenario.focal_track_id
+                
+                # Find the focal track
+                tracks = None
+                if hasattr(scenario, 'tracks'):
+                    if isinstance(scenario.tracks, dict):
+                        focal_track = scenario.tracks.get(focal_track_id)
+                    elif isinstance(scenario.tracks, list):
+                        for track in scenario.tracks:
+                            if getattr(track, 'track_id', None) == focal_track_id:
+                                focal_track = track
+                                break
+            
+            # If no focal track found, use first available track
+            if focal_track is None:
+                print("Warning: Focal track not found, using first available track")
+                if hasattr(scenario, 'tracks'):
+                    if isinstance(scenario.tracks, dict):
+                        focal_track = list(scenario.tracks.values())[0]
+                    elif isinstance(scenario.tracks, list):
+                        focal_track = scenario.tracks[0]
+                        
+            if focal_track is None:
+                print("Error: No tracks found in scenario")
+                return
+                
+            # Get object states
+            object_states = None
+            if hasattr(focal_track, 'object_states'):
+                object_states = focal_track.object_states
+            elif hasattr(focal_track, 'states'):
+                object_states = focal_track.states
+                
+            if object_states is None or timestep >= len(object_states):
+                print(f"Warning: Cannot access timestep {timestep} for focal agent")
+                return
+                
+            # Get position
+            state = object_states[timestep]
+            if hasattr(state, 'position'):
+                current_pos = np.array([state.position[0], state.position[1]])
+            elif hasattr(state, 'pose'):
+                current_pos = np.array([state.pose.position[0], state.pose.position[1]])
+            else:
+                print("Warning: Cannot find position for focal agent")
+                return
+            
+            # Check if prediction needs alignment
+            pred_start = prediction[0, 0, :]  # First mode, first timestep
+            distance_from_current = np.linalg.norm(pred_start - current_pos)
+            
+            aligned_prediction = prediction.copy()
+            if distance_from_current > 10:  # Threshold in meters
+                print(f"Aligning single agent prediction (distance: {distance_from_current:.2f}m)")
+                aligned_prediction = prediction + current_pos.reshape(1, 1, 2)
+            
             if best_pred < 0:
                 _scatter_polylines(
-                    prediction[:, :, :],
+                    aligned_prediction[:, :, :],
                     ax,
                     color="#ffc187",
                     grad_color=False,
@@ -174,8 +294,8 @@ def visualize_scenario(
                     arrow=False
                 )
                 plt.scatter(
-                    prediction[:, -1, 0],
-                    prediction[:, -1, 1],
+                    aligned_prediction[:, -1, 0],
+                    aligned_prediction[:, -1, 1],
                     color="#ff993b",
                     alpha=1,
                     zorder=2000,
@@ -184,7 +304,7 @@ def visualize_scenario(
                 )
             else:
                 _scatter_polylines(
-                    prediction[:, :, :],
+                    aligned_prediction[:, :, :],
                     ax,
                     color="#ffc187",
                     grad_color=False,
@@ -194,16 +314,16 @@ def visualize_scenario(
                     arrow=False
                 )
                 plt.scatter(
-                    prediction[:, -1, 0],
-                    prediction[:, -1, 1],
+                    aligned_prediction[:, -1, 0],
+                    aligned_prediction[:, -1, 1],
                     color="#ff993b",
                     alpha=0.3,
                     zorder=2000,
                     marker="*",
                     s=200
                 )
-                if best_pred < prediction.shape[0]:
-                    best_prediction = prediction[best_pred:best_pred+1, :, :]
+                if best_pred < aligned_prediction.shape[0]:
+                    best_prediction = aligned_prediction[best_pred:best_pred+1, :, :]
                     _scatter_polylines(
                         best_prediction,
                         ax,
@@ -237,7 +357,6 @@ def visualize_scenario(
         plt.savefig(save_path, dpi=300, pad_inches=0)
         plt.close()
     if create_fig: return fig
-
 
 def _plot_static_map_elements(
     static_map: ArgoverseStaticMap, show_ped_xings: bool = False

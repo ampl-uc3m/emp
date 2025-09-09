@@ -66,6 +66,7 @@ def main():
             if predict:
                 prediction = batch_pred[0][b].squeeze()
                 visualize_scenario(scenario, static_map, title="{}".format(scene_id), prediction=prediction, tight=True, timestep=49 if split == "test" else 50, save_path=Path("predictions/{}.png".format(scene_id)))
+                print(" aqui tio ")
                 AA
             else:
                 visualize_scenario(scenario, static_map, title="{}".format(scene_id), tight=True, timestep=49 if split == "test" else 50)

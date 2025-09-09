@@ -12,6 +12,8 @@ services:
         GROUP_NAME: ${GROUP_NAME:-user}
     container_name: emp_container_submilimetrico_preciso
     runtime: nvidia  # Add this for GPU support , pytorch lightning lo necesita
+    ports:
+      - "8888:8888"
     volumes:
       - ../emp:/workspace/emp
       - /raid/datasets/dani_datasets/av2:/raid/datasets/av2:rw
