@@ -29,6 +29,7 @@ def main():
 
     if predict:
         chkpt_fpath = "checkpoints/empd.ckpt"
+        #chkpt_fpath = "checkpoints/empm.ckpt"
         assert os.path.exists(chkpt_fpath), "chkpt files does not exist, update path to checkpoint"
         model = Model.load_from_checkpoint(chkpt_fpath, pretrained_weights=chkpt_fpath)
         model = model.eval().cuda()
